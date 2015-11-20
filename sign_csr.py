@@ -14,7 +14,7 @@ def sign_local_json(private_key, out, text):
 {}
 """.format(' '.join(command)))
 
-def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None):
+def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None, staging=False):
     """Use the ACME protocol to get an ssl certificate signed by a
     certificate authority.
 
@@ -27,8 +27,11 @@ def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None):
     :rtype: string
 
     """
-    #CA = "https://acme-staging.api.letsencrypt.org"
-    CA = "https://acme-v01.api.letsencrypt.org"
+    if staging:
+        sys.stderr.write("Using staging CA\n")
+        CA = "https://acme-staging.api.letsencrypt.org"
+    else:
+        CA = "https://acme-v01.api.letsencrypt.org"
     TERMS = "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf"
     nonce_req = urllib2.Request("{}/directory".format(CA))
     nonce_req.get_method = lambda : 'HEAD'
@@ -434,9 +437,10 @@ $ python sign_csr.py --public-key user.pub domain.csr > signed.crt
     parser.add_argument("-e", "--email", default=None, help="contact email, default is webmaster@<shortest_domain>")
     parser.add_argument("-r", "--private-key", default=None, help="path to your private key")
     parser.add_argument("-d", "--docroot", default=None, help="path to your docroot")
+    parser.add_argument("-s", "--staging", default=False, action='store_true', help="using staging url")
     parser.add_argument("csr_path", help="path to your certificate signing request")
 
     args = parser.parse_args()
-    signed_crt = sign_csr(args.public_key, args.csr_path, email=args.email, private_key=args.private_key, docroot=args.docroot)
+    signed_crt = sign_csr(args.public_key, args.csr_path, email=args.email, private_key=args.private_key, docroot=args.docroot, staging=args.staging)
     sys.stdout.write(signed_crt)
 
