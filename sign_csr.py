@@ -306,13 +306,25 @@ STEP 3: You need to sign some more files (replace 'user.key' with your user priv
     # Step 11: Ask the user to host the token on their server
     for n, i in enumerate(ids):
         if docroot:
-            sys.stderr.write("""
+            try:
+                sys.stderr.write("Creating response token file.")
+                if not os.path.exists(docroot + "/.well-known/acme-challenge"):
+                    os.makedirs(docroot + "/.well-known/acme-challenge")
+                with open(docroot + "/.well-known/acme-challenge/{}".format(challenge['token']), 'w') as f:
+                    f.write(responses[n]['data'])
+            except:
+                sys.stderr.write("""
+STEP {}: You need to run this commands:
+
+mkdir -p {}/{}
 echo '{}' > {}/{}
-		""".format(
-                responses[n]['data'],
-				docroot,
-                ".well-known/acme-challenge/{}".format(challenge['token']),
-			    ))
+""".format(n+4, 
+                    docroot,
+                    ".well-known/acme-challenge",
+                    responses[n]['data'],
+                    docroot,
+                    ".well-known/acme-challenge/{}".format(challenge['token']),
+                    ))
         else:
             sys.stderr.write("""\
 STEP {}: You need to run this command on {} (don't stop the python command until the next step).
