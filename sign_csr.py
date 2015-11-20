@@ -14,7 +14,7 @@ def sign_local_json(private_key, out, text):
 {}
 """.format(' '.join(command)))
 
-def sign_csr(pubkey, csr, email=None, private_key=None):
+def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None):
     """Use the ACME protocol to get an ssl certificate signed by a
     certificate authority.
 
@@ -302,7 +302,16 @@ STEP 3: You need to sign some more files (replace 'user.key' with your user priv
 
     # Step 11: Ask the user to host the token on their server
     for n, i in enumerate(ids):
-        sys.stderr.write("""\
+        if docroot:
+            sys.stderr.write("""
+echo '{}' > {}/{}
+		""".format(
+                responses[n]['data'],
+				docroot,
+                ".well-known/acme-challenge/{}".format(challenge['token']),
+			    ))
+        else:
+            sys.stderr.write("""\
 STEP {}: You need to run this command on {} (don't stop the python command until the next step).
 
 sudo python -c "import BaseHTTPServer; \\
@@ -312,7 +321,6 @@ sudo python -c "import BaseHTTPServer; \\
     s.serve_forever()"
 
 """.format(n+4, i['domain'], responses[n]['data']))
-
         stdout = sys.stdout
         sys.stdout = sys.stderr
         raw_input("Press Enter when you've got the python command running on your server...")
@@ -425,9 +433,10 @@ $ python sign_csr.py --public-key user.pub domain.csr > signed.crt
     parser.add_argument("-p", "--public-key", required=True, help="path to your account public key")
     parser.add_argument("-e", "--email", default=None, help="contact email, default is webmaster@<shortest_domain>")
     parser.add_argument("-r", "--private-key", default=None, help="path to your private key")
+    parser.add_argument("-d", "--docroot", default=None, help="path to your docroot")
     parser.add_argument("csr_path", help="path to your certificate signing request")
 
     args = parser.parse_args()
-    signed_crt = sign_csr(args.public_key, args.csr_path, email=args.email, private_key=args.private_key)
+    signed_crt = sign_csr(args.public_key, args.csr_path, email=args.email, private_key=args.private_key, docroot=args.docroot)
     sys.stdout.write(signed_crt)
 
