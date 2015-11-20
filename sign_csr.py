@@ -22,7 +22,10 @@ def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None, staging=Fa
     :param string csr: Path to the certificate signing request.
     :param string email: An optional user account contact email
                          (defaults to webmaster@<shortest_domain>)
-
+    :param string private_key: An optional name of the private key.
+    :param string docroot: The docroot of the webserver if the
+                         token shall be put there.
+    :param bool staging: A flag denoting to use the staging url.
     :returns: Signed Certificate (PEM format)
     :rtype: string
 
