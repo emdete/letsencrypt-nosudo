@@ -3,6 +3,9 @@ import argparse, subprocess, json, os, urllib2, sys, base64, binascii, time, \
     hashlib, tempfile, re, copy, textwrap
 
 def sign_local_json(private_key, out, text):
+    """Sign a textfile with a private key. The command is either executed (if a
+    private key is given) or displayed.
+    """
     command = ['openssl', 'dgst', '-sha256', '-sign', private_key or 'user.key', '-out', out, text, ]
     if private_key:
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -10,9 +13,7 @@ def sign_local_json(private_key, out, text):
         if proc.returncode != 0:
             raise IOError("Error signing {}".format(text))
     else:
-        sys.stderr.write("""\
-{}
-""".format(' '.join(command)))
+        sys.stderr.write(' '.join(command))
 
 def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None, staging=False):
     """Use the ACME protocol to get an ssl certificate signed by a
