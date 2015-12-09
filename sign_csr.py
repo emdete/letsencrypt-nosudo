@@ -15,7 +15,7 @@ def sign_local_json(private_key, out, text):
     else:
         sys.stderr.write(' '.join(command))
 
-def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None, staging=False):
+def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None, staging=False, ssh_host=None):
     """Use the ACME protocol to get an ssl certificate signed by a
     certificate authority.
 
@@ -310,25 +310,41 @@ STEP 3: You need to sign some more files (replace 'user.key' with your user priv
     # Step 11: Ask the user to host the token on their server
     for n, i in enumerate(ids):
         if docroot:
-            try:
-                sys.stderr.write("Creating response token file.")
-                if not os.path.exists(docroot + "/.well-known/acme-challenge"):
-                    os.makedirs(docroot + "/.well-known/acme-challenge")
-                with open(docroot + "/.well-known/acme-challenge/{}".format(challenge['token']), 'w') as f:
-                    f.write(responses[n]['data'])
-            except:
-                sys.stderr.write("""
+            if ssh_host:
+                command = ["ssh", ssh_host, "mkdir", "-p", '{}/.well-known/acme-challenge'.format(docroot), ]
+                proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = proc.communicate()
+                if proc.returncode != 0:
+                    raise IOError("Error ssh to {} exitcode={}".format(' '.join(command), proc.returncode))
+                command = ["ssh", ssh_host, "echo", responses[n]['data'], '>', '{}/.well-known/acme-challenge/{}'.format(docroot, challenge['token']), ]
+                proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = proc.communicate()
+                if proc.returncode != 0:
+                    raise IOError("Error ssh to {} exitcode={}".format(' '.join(command), proc.returncode))
+                sys.stderr.write("Created response token file.\n")
+            else:
+                try:
+                    sys.stderr.write("Creating response token file.\n")
+                    if not os.path.exists(docroot + "/.well-known/acme-challenge"):
+                        os.makedirs(docroot + "/.well-known/acme-challenge")
+                    with open(docroot + "/.well-known/acme-challenge/{}".format(challenge['token']), 'w') as f:
+                        f.write(responses[n]['data'])
+                except:
+                    sys.stderr.write("""
 STEP {}: You need to run this commands:
 
-mkdir -p {}/{}
-echo '{}' > {}/{}
-""".format(n+4, 
+mkdir -p {}/.well-known/acme-challenge
+echo '{}' > {}/.well-known/acme-challenge/{}
+""".format(n+4,
                     docroot,
-                    ".well-known/acme-challenge",
                     responses[n]['data'],
                     docroot,
-                    ".well-known/acme-challenge/{}".format(challenge['token']),
+                    challenge['token'],
                     ))
+                    stdout = sys.stdout
+                    sys.stdout = sys.stderr
+                    raw_input("Press Enter when you've the files on your server...")
+                    sys.stdout = stdout
         else:
             sys.stderr.write("""\
 STEP {}: You need to run this command on {} (don't stop the python command until the next step).
@@ -340,10 +356,10 @@ sudo python -c "import BaseHTTPServer; \\
     s.serve_forever()"
 
 """.format(n+4, i['domain'], responses[n]['data']))
-        stdout = sys.stdout
-        sys.stdout = sys.stderr
-        raw_input("Press Enter when you've got the python command running on your server...")
-        sys.stdout = stdout
+            stdout = sys.stdout
+            sys.stdout = sys.stderr
+            raw_input("Press Enter when you've got the python command running on your server...")
+            sys.stdout = stdout
 
         # Step 12: Let the CA know you're ready for the challenge
         sys.stderr.write("Requesting verification for {}...\n".format(i['domain']))
@@ -413,7 +429,8 @@ sudo python -c "import BaseHTTPServer; \\
 
     # Step 15: Convert the signed cert from DER to PEM
     sys.stderr.write("Certificate signed!\n")
-    sys.stderr.write("You can stop running the python command on your server (Ctrl+C works).\n")
+    if not docroot:
+        sys.stderr.write("You can stop running the python command on your server (Ctrl+C works).\n")
     signed_der64 = base64.b64encode(signed_der)
     signed_pem = """\
 -----BEGIN CERTIFICATE-----
@@ -453,10 +470,11 @@ $ python sign_csr.py --public-key user.pub domain.csr > signed.crt
     parser.add_argument("-e", "--email", default=None, help="contact email, default is webmaster@<shortest_domain>")
     parser.add_argument("-r", "--private-key", default=None, help="path to your private key")
     parser.add_argument("-d", "--docroot", default=None, help="path to your docroot")
+    parser.add_argument("-o", "--ssh-host", default=None, help="host to deploy the content, reachable via ssh")
     parser.add_argument("-s", "--staging", default=False, action='store_true', help="using staging url")
     parser.add_argument("csr_path", help="path to your certificate signing request")
 
     args = parser.parse_args()
-    signed_crt = sign_csr(args.public_key, args.csr_path, email=args.email, private_key=args.private_key, docroot=args.docroot, staging=args.staging)
+    signed_crt = sign_csr(args.public_key, args.csr_path, email=args.email, private_key=args.private_key, docroot=args.docroot, staging=args.staging, ssh_host=args.ssh_host, )
     sys.stdout.write(signed_crt)
 
