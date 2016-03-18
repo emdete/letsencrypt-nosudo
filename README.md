@@ -54,21 +54,21 @@ python sign_csr.py \
 	--ssh-host sample.com \
 	--docroot /var/www/sample.com/ \
 	--public-key user.pub \
-	domain.csr \
-	> signed.crt
+	sample.com.csr \
+	> sample.com.crt
 ```
 * chain the cert
 ```sh
-cat signed.crt lets-encrypt-x1-cross-signed.pem > chained.pem
+cat sample.com.crt lets-encrypt-x1-cross-signed.pem > sample.com.chained.pem
 ```
 * copy the cert to the server
 * restart httpd
 
 ##Insides
 
-the functionality of the original script was mostly kept intact. instead
+The functionality of the original script was mostly kept intact. instead
 additional parameters were added which, if given trigger the automatism to use
-the private key or copy to the server via ssh. if you do not provide these
+the private key or copy to the server via ssh. If you do not provide these
 informations the script still spits out command to issue to progress to the
 next step.
 
