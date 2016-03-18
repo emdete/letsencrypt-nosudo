@@ -49,7 +49,7 @@ wget https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem
 * you run the script using python and passing in the path to your user account public key and the domain CSR. The paths can be relative or absolute.
 ```sh
 python sign_csr.py \
-	--email=webmaster@`basename $< .csr` \
+	--email=webmaster@example.com \
 	--private-key user.key \
 	--ssh-host sample.com \
 	--docroot /var/www/sample.com/ \
