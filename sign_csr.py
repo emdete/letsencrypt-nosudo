@@ -1,6 +1,18 @@
 #!/usr/bin/env python
-import argparse, subprocess, json, os, urllib2, sys, base64, binascii, time, \
-    hashlib, tempfile, re, copy, textwrap
+import argparse
+import base64
+import binascii
+import copy
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import textwrap
+import time
+import urllib2
 
 def sign_local_json(private_key, out, text):
     """Sign a textfile with a private key. The command is either executed (if a
