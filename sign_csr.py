@@ -91,7 +91,7 @@ def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None, staging=Fa
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
     if proc.returncode != 0:
-        raise IOError("Error loading {}".format(csr))
+        raise IOError("Error reading {}".format(csr))
     domains = set([])
     common_name = re.search("Subject:.*? CN=([^\s,;/]+)", out)
     if common_name is not None:
@@ -169,6 +169,8 @@ def sign_csr(pubkey, csr, email=None, private_key=None, docroot=None, staging=Fa
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     csr_der, err = proc.communicate()
+    if proc.returncode != 0:
+        raise IOError("Error loading {}".format(csr))
     csr_der64 = _b64(csr_der)
     csr_nonce = urllib2.urlopen(nonce_req).headers['Replay-Nonce']
     csr_raw = json.dumps({
